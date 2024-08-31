@@ -20,8 +20,11 @@ def sendInterest(request):
     if InterestRecords.objects.filter(sender_id__in=[request.user, receiver], receiver_id__in=[request.user, receiver]).exists():
         return JsonResponse({'detail': 'Interest request already exists.'}, status=400)
     
-    # Create a new interest request
-    interest_request = InterestRecords.objects.create(sender_id=request.user, receiver_id=receiver, status='Pending')
+    try:
+        interest_request = InterestRecords.objects.create(sender_id=request.user, receiver_id=receiver, status='Pending')
+    except Exception as e:
+        return JsonResponse({'msg': 'Unable to send request'})
+        
     serializer = InterestRecordsSerializer(interest_request)
     
     return JsonResponse({'msg': 'Interest sent!'}, status=201)

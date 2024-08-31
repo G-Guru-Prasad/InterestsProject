@@ -11,7 +11,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         self.room_name = f"{self.sender_id}_{self.receiver_id}"
         self.room_group_name = f"chat_{self.room_name}"
 
-        # Join room group
         await self.channel_layer.group_add(
             self.room_group_name,
             self.channel_name
@@ -28,7 +27,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
             }))
 
     async def disconnect(self, close_code):
-        # Leave room group
         await self.channel_layer.group_discard(
             self.room_group_name,
             self.channel_name
@@ -39,11 +37,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
         message = text_data_json['message']
         sender_id = text_data_json['sender_id']
         msgReceiverId = text_data_json['msgReceiverId']
-        receiver_id = self.receiver_id  # Extracted from the URL or context
+        receiver_id = self.receiver_id
 
         sender_username = await self.save_message(sender_id=sender_id, receiver_id=msgReceiverId, message=message)
 
-        # Send message to room group
         await self.channel_layer.group_send(
             self.room_group_name,
             {
@@ -58,7 +55,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         message = event['message']
         sender_username = event['sender_username']
 
-        # Send message to WebSocket
         await self.send(text_data=json.dumps({
             'message': message,
             'sender_id': sender_username
@@ -66,7 +62,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def save_message(self, sender_id, receiver_id, message):
-        # from .models import ChatMessages, User
         chat_obj = ChatMessages.objects.create(
             sender_id_id=sender_id,
             receiver_id_id=receiver_id,
@@ -78,7 +73,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def get_messages(self):
-        # from .models import ChatMessages, User
         username_subquery = User.objects.filter(id=OuterRef('sender_id')).values('username')[:1]
         message_list = list(
             ChatMessages.objects.filter(

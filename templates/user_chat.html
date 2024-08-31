@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <a href="{% url '' %}">
+            <i class="material-icons" style="vertical-align: middle;">home</i>Home
+        </a>
+        <h4>Chat with {{ receiver_username }}</h4>
+        <ul id="messages" class="collection"></ul>
+        <input id="message_input" type="text" placeholder="Type a message...">
+        <button id="send_button" class="btn">Send</button>
+    </div>
+    <script>
+        const senderId = "{{ sender_id }}";
+        const receiverId = "{{ receiver_id }}";
+        const currentId = "{{ current_user.id }}";
+        const username = "{{current_user.username}}"
+        let msgReceiverId;
+        if (currentId == senderId){
+            msgReceiverId = receiverId;
+        }else{
+            msgReceiverId = senderId;
+        }
+
+        const chatSocket = new WebSocket(
+            'ws://' + window.location.host + '/ws/chat/' + senderId + '_' + receiverId + '/'
+        );
+
+        chatSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            const message = data['message'];
+            const messages = document.getElementById('messages');
+            const messageElement = document.createElement('li');
+            messageElement.classList.add('collection-item');
+            messageElement.textContent = `${data.sender_id}: ${message}`;
+            messages.appendChild(messageElement);
+        };
+
+        chatSocket.onclose = function(e) {
+            M.toast({html: 'Chat socket closed unexpectedly', classes: 'rounded'});
+        };
+
+        document.getElementById('send_button').onclick = function() {
+            sendMessages();
+        };
+
+        document.addEventListener('DOMContentLoaded', (event) => {
+            const input = document.getElementById('message_input');
+            
+            input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendMessages();
+                }
+            });
+        });
+
+        function sendMessages(){
+            const messageInput = document.getElementById('message_input');
+            const message = messageInput.value;
+            if (message != ''){
+                chatSocket.send(JSON.stringify({'message': message, 'sender_id':currentId, 'msgReceiverId':msgReceiverId}));
+                messageInput.value = '';
+            }
+        }
+    </script>
+</body>
+</html>

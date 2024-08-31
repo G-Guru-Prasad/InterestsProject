@@ -1,0 +1,159 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        var csrf_token = "{{ csrf_token }}";
+    </script>
+    <title>User Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+</head>
+<body>
+    <style>
+        .material-icons{
+            vertical-align: middle;
+            color: white;
+            cursor: pointer;
+        }
+    </style>
+    <nav class="blue">
+        <div class="nav-wrapper">
+            <a href="#" class="brand-logo center">InterestApp</a>
+            <ul id="nav-mobile" class="right">
+                <li><a href="#">Welcome, {{ user.username }}</a></li>
+                <li><a href="{% url 'logout' %}" class="btn red">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="row">
+            <div class="col s12 m7">
+                <h5>Available Users</h5>
+                <ul class="collection" id="user-list">
+                    {% for user in user_list %}
+                    <li class="collection-item avatar">
+                        <i class="material-icons circle blue">person</i>
+                        <span class="title">{{user.username}}</span>
+                        <a href="#" class="btn waves-effect right" onclick="sendInterest('{{user.id}}', '{{user.username}}')">Send Interest</a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <div class="col s12 m5">
+                <h5>Received Interests</h5>
+                <ul class="collection" id="received-interests">
+                    {% for interests in received_interests %}
+                        <li class="collection-item">
+                            Sent by {{interests.sender_id.username}} - Status: {{interests.status}}
+                            {% if interests.status == 'Pending' %}
+                                <i class="material-icons green" onclick="sendReponse('{{interests.interest_id}}', 'Accepted')">check</i>
+                                <i class="material-icons red" onclick="sendReponse('{{interests.interest_id}}', 'Rejected')">close</i>
+                            {% elif interests.status == 'Accepted' %}
+                                <a href="{% url 'chat_room' interests.sender_id.id interests.receiver_id.id %}" title="Click to Chat">
+                                    <i class="material-icons green" >chat</i>
+                                </a>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+                
+                <h5>Sent Interests</h5>
+                <ul class="collection" id="sent-interests">
+                    {% for interests in sent_interests %}
+                        <li class="collection-item">
+                            Sent to {{interests.receiver_id.username}} - Status: {{interests.status}}
+                            {% if interests.status == 'Accepted' %}
+                                <a href="{% url 'chat_room' interests.sender_id.id interests.receiver_id.id %}" title="Click to Chat">
+                                    <i class="material-icons green" >chat</i>
+                                </a>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        function sendInterest(user_id, username){
+            var data = new FormData()
+            data.append('user_id', user_id);
+            $.ajaxSetup({
+                beforeSend: function (xhr, settings) {
+                if (
+                    !/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type) &&
+                    !this.crossDomain
+                ) {
+                    xhr.setRequestHeader("X-CSRFToken", csrf_token);
+                }
+                },
+            });
+
+            $.ajax({
+                url: "{% url 'sendInterest' %}",
+                type: "POST",
+                data: data,
+                processData: false,
+                contentType: false,
+                success: function (response) {
+                    var listItem = `<li class='collection-item'>Sent to ${username} - Status: ${'Pending'}</li>`;
+                    $('#sent-interests').append(listItem);
+                    M.toast({'html':response['msg'], 'classes':'rounded'})
+                },
+
+                error: function (xhr, status, error) {
+                    M.toast({'html':xhr.responseJSON.detail, 'classes':'rounded'})
+                },
+            });
+        }
+
+        function sendReponse(interest_id, interest_status){
+            var data =  new FormData();
+            data.append('interest_id', interest_id)
+            data.append('interest_status', interest_status)
+            $.ajaxSetup({
+                beforeSend: function (xhr, settings) {
+                if (
+                    !/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type) &&
+                    !this.crossDomain
+                ) {
+                    xhr.setRequestHeader("X-CSRFToken", csrf_token);
+                }
+                },
+            });
+
+            $.ajax({
+                url: "{% url 'sendResponse' %}",
+                type: "POST",
+                data: data,
+                processData: false,
+                contentType: false,
+                success: function (response) {
+                    console.log('response', response)
+                    Swal.fire({
+                        icon:'success',
+                        title:response['msg']
+                    }).then((ok)=>{
+                        location.reload();
+                    })
+                },
+
+                error: function (xhr, status, error) {
+                    console.log('xhr.responseJSON', xhr)
+                    M.toast({'html':xhr.statusText, 'classes':'rounded'})
+                },
+            });
+        
+        }
+    </script>
+</body>
+</html>

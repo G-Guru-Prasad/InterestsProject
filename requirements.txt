@@ -1,0 +1,15 @@
+django
+requests
+djangorestframework
+djangorestframework-simplejwt
+channels
+channels_redis
+whitenoise
+daphne
+
+# create a virtual environment
+#python -m venv genv
+
+# command to install required packages
+# pip install -r requirements.txt
+# daphne -p 8000 InterestsProject.asgi:application

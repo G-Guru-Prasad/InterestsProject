@@ -32,7 +32,7 @@ This project is a minimal full-stack web application that demonstrates user auth
 1. **Clone the repository:**
 
     ```bash
-    git clone https://github.com/G-Guru-Prasad/InterestsProject
+    git clone https://github.com/G-Guru-Prasad/InterestsProject.git
     cd InterestsProject
     ```
 
